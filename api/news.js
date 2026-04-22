@@ -8,18 +8,25 @@ module.exports = async function handler(req, res) {
 
   try {
     const body = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
-    
+    const parsed = JSON.parse(body);
+
+    // Remove tools and use plain web search via system prompt instead
+    const cleanBody = {
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 2000,
+      messages: parsed.messages
+    };
+
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': process.env.REACT_APP_ANTHROPIC_KEY,
-        'anthropic-version': '2023-06-01',
-        'anthropic-beta': 'web-search-2025-03-05'
+        'anthropic-version': '2023-06-01'
       },
-      body: body
+      body: JSON.stringify(cleanBody)
     });
-    
+
     const data = await response.json();
     res.status(response.status).json(data);
   } catch (err) {
