@@ -12,33 +12,50 @@ module.exports = async function handler(req, res) {
 
     const { category } = req.body;
 
-    const today = new Date();
-    const todayStr = today.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    const monthStr = today.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0, 10);
-
     const categoryFocus = {
-      funding: 'funding rounds, Series A/B/C raises, venture capital',
-      layoffs: 'layoffs, workforce reductions, downsizing',
-      leadership: 'CEO/CFO/CSO appointments, leadership changes',
-      ma: 'mergers, acquisitions, partnerships',
-      research: 'FDA approvals, clinical trials, research breakthroughs',
-      expansion: 'lab space leases, facility expansions, relocations',
-      all: 'funding, layoffs, leadership, M&A, lab leases, expansions'
+      funding: 'funding rounds, Series A/B/C raises, venture capital investments',
+      layoffs: 'layoffs, workforce reductions, downsizing, headcount cuts',
+      leadership: 'executive hires, CEO/CFO/CSO appointments, leadership changes',
+      ma: 'mergers, acquisitions, partnerships, licensing deals',
+      research: 'clinical trial results, FDA approvals, research breakthroughs, drug development',
+      expansion: 'new office openings, lab space leases, facility expansions, relocations',
+      all: 'funding, layoffs, leadership changes, M&A, research breakthroughs, expansions'
     };
 
     const focus = categoryFocus[category] || categoryFocus.all;
 
-    const prompt = `Today is ${todayStr}. Search for Bay Area biotech and life science news from ${monthStr} (since ${monthStart}).
+    const prompt = `Search these specific news sources for the latest Bay Area life science, biotech, advanced manufacturing, and AI news:
 
-Search these sources: big4bio.com, connectcre.com, bisnow.com, fiercebiotech.com, endpoints.news, statnews.com, genengnews.com
+PRIMARY SOURCES (search these first):
+- fiercebiotech.com
+- big4bio.com/regions/san-francisco-bay
+- endpoints.news
+- globenewswire.com
+- genengnews.com
+- bisnow.com/tags/bay-area
+- statnews.com
 
-Topic: ${focus}
-Only include: Bay Area companies, articles from ${monthStr}, real URLs from search results.
+Also search other reputable biotech/life science news sources.
 
-Return a JSON array of up to 12 items, each with: title, company, category (funding/layoffs/leadership/ma/research/expansion), summary (2 sentences), date, source, url, relevance.
+Focus on: ${focus}
 
-Return ONLY the raw JSON array.`;
+Only include news about:
+1. Bay Area companies (headquartered in SF, South SF, San Mateo, Redwood City, Palo Alto, Oakland, Berkeley, Emeryville, etc.)
+2. Companies with a significant Bay Area presence or operations
+
+Return ONLY a JSON array of up to 12 news items. Each item must have:
+- title: exact headline from the article
+- company: company name (or "Multiple")
+- category: one of "funding","layoffs","leadership","ma","research","expansion"
+- summary: 2-3 sentences summarizing the news, relevant to commercial real estate brokers
+- date: publication date like "April 2025"
+- source: which publication this came from
+- url: the direct URL link to the article (must be a real, working URL from the search results)
+- relevance: one sentence on why a commercial real estate broker should care about this news
+
+IMPORTANT: Only include articles where you have found the actual URL. Do not make up URLs.
+
+Return ONLY the raw JSON array. No markdown. No backticks. No explanation.`;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
