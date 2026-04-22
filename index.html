@@ -430,7 +430,7 @@ function NewsTab(){
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
-          model:'claude-sonnet-4-5-20250514',
+          model:'claude-haiku-4-5-20251001',
           max_tokens:2000,
           messages:[{role:'user',content:`Based on your training knowledge, list recent notable news about Bay Area biotech and life science companies related to: ${CATEGORY_QUERIES[cat]}.
 
