@@ -12,6 +12,11 @@ module.exports = async function handler(req, res) {
 
     const { category } = req.body;
 
+    // Get today's date to inject into prompt
+    const today = new Date();
+    const todayStr = today.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const todayISO = today.toISOString().slice(0, 10);
+
     const categoryFocus = {
       funding: 'funding rounds, Series A/B/C raises, venture capital investments',
       layoffs: 'layoffs, workforce reductions, downsizing, headcount cuts',
@@ -24,33 +29,40 @@ module.exports = async function handler(req, res) {
 
     const focus = categoryFocus[category] || categoryFocus.all;
 
-    const prompt = `Search these specific news sources for the latest Bay Area life science, biotech, advanced manufacturing, and AI news:
+    const prompt = `Today is ${todayStr}.
 
-PRIMARY SOURCES (search these first):
+Search these specific news sources for articles published TODAY (${todayISO}) or within the last 48 hours. Do NOT include older articles.
+
+PRIMARY SOURCES:
 - fiercebiotech.com
-- big4bio.com/regions/san-francisco-bay
 - endpoints.news
-- globenewswire.com
+- statnews.com
+- big4bio.com/regions/san-francisco-bay
+- globenewswire.com/newsroom
 - genengnews.com
 - bisnow.com/tags/bay-area
-- statnews.com
 
-Also search other reputable biotech/life science news sources.
+Also check other reputable biotech/life science sources for today's news.
 
-Focus on: ${focus}
+Focus topic: ${focus}
 
-Only include news about:
-1. Bay Area companies (headquartered in SF, South SF, San Mateo, Redwood City, Palo Alto, Oakland, Berkeley, Emeryville, etc.)
-2. Companies with a significant Bay Area presence or operations
+STRICT REQUIREMENTS:
+- Only articles from the last 48 hours (published on or after ${new Date(today - 2*24*60*60*1000).toISOString().slice(0,10)})
+- Only Bay Area companies or companies with Bay Area operations/facilities
+- Life science, biotech, advanced manufacturing, or AI topics only
+- Must have a real, verifiable URL from the search
 
 Return ONLY a JSON array of up to 12 news items. Each item must have:
-- title: exact headline from the article
+- title: exact headline
 - company: company name (or "Multiple")
 - category: one of "funding","layoffs","leadership","ma","research","expansion"
-- summary: 2-3 sentences summarizing the news, relevant to commercial real estate brokers
-- date: publication date like "April 2025"
-- source: which publication this came from
-- relevance: one sentence on why a commercial real estate broker should care about this news
+- summary: 2-3 sentences summarizing the news for commercial real estate brokers
+- date: exact publication date (e.g. "April 22, 2026")
+- source: publication name
+- url: direct URL to the article
+- relevance: one sentence on why a commercial real estate broker should care
+
+If there are fewer than 12 articles from today/yesterday, only return what exists — do NOT fill with older news.
 
 Return ONLY the raw JSON array. No markdown. No backticks. No explanation.`;
 
@@ -59,12 +71,11 @@ Return ONLY the raw JSON array. No markdown. No backticks. No explanation.`;
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': key,
-        'anthropic-version': '2023-06-01',
-        'anthropic-beta': 'interleaved-thinking-2025-05-14'
+        'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 3000,
+        max_tokens: 4000,
         tools: [{ type: 'web_search_20250305', name: 'web_search' }],
         messages: [{ role: 'user', content: prompt }]
       })
