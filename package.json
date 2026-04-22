@@ -1,0 +1,7 @@
+{
+  "name": "bay-area-lab-matrix",
+  "version": "1.0.0",
+  "engines": {
+    "node": "20.x"
+  }
+}
