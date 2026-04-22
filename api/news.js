@@ -7,24 +7,19 @@ module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const body = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
-    const parsed = JSON.parse(body);
+    const key = process.env.ANTHROPIC_KEY;
+    if (!key) return res.status(500).json({ error: 'API key not configured. Key: ' + Object.keys(process.env).join(',') });
 
-    // Remove tools and use plain web search via system prompt instead
-    const cleanBody = {
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 2000,
-      messages: parsed.messages
-    };
+    const body = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': process.env.REACT_APP_ANTHROPIC_KEY,
+        'x-api-key': key,
         'anthropic-version': '2023-06-01'
       },
-      body: JSON.stringify(cleanBody)
+      body: body
     });
 
     const data = await response.json();
