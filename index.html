@@ -711,192 +711,6 @@ function AbsorptionTab(){
   );
 }
 
-const NEWS_CATEGORIES=[
-  {key:'all',label:'All News'},
-  {key:'funding',label:'💰 Funding'},
-  {key:'layoffs',label:'📉 Layoffs'},
-  {key:'leadership',label:'👤 Leadership'},
-  {key:'ma',label:'🤝 M&A'},
-  {key:'research',label:'🔬 Research'},
-  {key:'expansion',label:'🏢 Expansion'},
-];
-
-const CATEGORY_QUERIES={
-  funding:'Bay Area biotech life science funding Series raise 2025',
-  layoffs:'Bay Area biotech life science layoffs workforce reduction 2025',
-  leadership:'Bay Area biotech life science CEO CFO appointed hired 2025',
-  ma:'Bay Area biotech life science merger acquisition deal 2025',
-  research:'Bay Area biotech life science breakthrough clinical trial FDA approval 2025',
-  expansion:'Bay Area biotech life science new office lab space lease expansion 2025',
-  all:'Bay Area biotech life science company news 2025',
-};
-
-const CAT_COLORS={
-  funding:{bg:'#dcfce7',color:'#15803d',icon:'💰'},
-  layoffs:{bg:'#fee2e2',color:'#dc2626',icon:'📉'},
-  leadership:{bg:'#e0f2fe',color:'#0369a1',icon:'👤'},
-  ma:{bg:'#ede9fe',color:'#7c3aed',icon:'🤝'},
-  research:{bg:'#fef3c7',color:'#b45309',icon:'🔬'},
-  expansion:{bg:'#f0fdf4',color:'#16a34a',icon:'🏢'},
-};
-
-function NewsTab(){
-  const CACHE_KEY='labmatrix_news_cache';
-
-  function loadCache(){
-    try{
-      const c=localStorage.getItem(CACHE_KEY);
-      if(!c)return null;
-      return JSON.parse(c);
-    }catch{return null;}
-  }
-
-  function saveCache(articles,lastFetched){
-    try{localStorage.setItem(CACHE_KEY,JSON.stringify({articles,lastFetched:lastFetched.toISOString()}));}catch{}
-  }
-
-  const cached=loadCache();
-  const [articles,setArticles]=useState(cached?cached.articles:[]);
-  const [loading,setLoading]=useState(false);
-  const [error,setError]=useState(null);
-  const [activeCat,setActiveCat]=useState('all');
-  const [lastFetched,setLastFetched]=useState(cached?new Date(cached.lastFetched):null);
-  const [expandedId,setExpandedId]=useState(null);
-
-  async function fetchNews(cat='all'){
-    setLoading(true);setError(null);setExpandedId(null);
-    try{
-      const response=await fetch('/api/news',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({category:cat})
-      });
-      const data=await response.json();
-      const text=data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
-      const clean=text.replace(/```json|```/g,'').trim();
-      const s=clean.indexOf('['),e=clean.lastIndexOf(']');
-      if(s===-1||e===-1)throw new Error('No data');
-      const parsed=JSON.parse(clean.slice(s,e+1));
-      setArticles(parsed);
-      const now=new Date();
-      setLastFetched(now);
-      saveCache(parsed,now);
-    }catch(err){
-      setError('fetch');
-    }
-    setLoading(false);
-  }
-
-  useEffect(()=>{},[]);
-
-  const displayed=activeCat==='all'?articles:articles.filter(a=>a.category===activeCat);
-
-  return(
-    <div style={{maxWidth:1200}}>
-      <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:20,flexWrap:'wrap',gap:12}}>
-        <div>
-          <h1 style={{fontSize:22,fontWeight:700,color:'#0f172a',marginBottom:4}}>Bay Area Life Science News</h1>
-          <p style={{fontSize:13,color:'#64748b'}}>Funding, layoffs, leadership, M&A, and breakthroughs — curated for outreach opportunities.</p>
-        </div>
-        <div style={{display:'flex',alignItems:'center',gap:10}}>
-          {lastFetched&&<span style={{fontSize:11,color:'#94a3b8'}}>Last refreshed: {lastFetched.toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'})} at {lastFetched.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>}
-          <button onClick={()=>fetchNews(activeCat)} disabled={loading}
-            style={{padding:'8px 16px',fontSize:12,fontWeight:600,borderRadius:8,border:'1px solid #e2e8f0',background:'#fff',color:'#475569',cursor:'pointer',display:'flex',alignItems:'center',gap:6,fontFamily:'inherit'}}>
-            <span style={{display:'inline-block',animation:loading?'spin .8s linear infinite':'none'}}>↻</span>
-            {loading?'Loading…':'Refresh'}
-          </button>
-        </div>
-      </div>
-
-      <div style={{display:'flex',gap:8,marginBottom:24,flexWrap:'wrap'}}>
-        {NEWS_CATEGORIES.map(c=>{
-          const on=activeCat===c.key;
-          return(<button key={c.key} onClick={()=>setActiveCat(c.key)}
-            style={{padding:'6px 14px',fontSize:12,fontWeight:500,borderRadius:20,cursor:'pointer',transition:'all .15s',fontFamily:'inherit',
-              background:on?'#0f172a':'#fff',color:on?'#fff':'#475569',border:'1px solid '+(on?'#0f172a':'#e2e8f0')}}>
-            {c.label}
-          </button>);
-        })}
-      </div>
-
-      {error==='setup'&&(
-        <div style={{background:'#fff',border:'1px solid #e2e8f0',borderRadius:10,padding:32,textAlign:'center'}}>
-          <div style={{fontSize:32,marginBottom:12}}>🔑</div>
-          <div style={{fontSize:15,fontWeight:600,color:'#0f172a',marginBottom:8}}>API Key Required</div>
-          <div style={{fontSize:13,color:'#64748b',maxWidth:400,margin:'0 auto',lineHeight:1.6}}>
-            Add your Anthropic API key to Vercel environment variables as <code style={{background:'#f1f5f9',padding:'2px 6px',borderRadius:4}}>REACT_APP_ANTHROPIC_KEY</code> to enable live news.
-          </div>
-        </div>
-      )}
-
-      {error==='fetch'&&(
-        <div style={{background:'#fef2f2',border:'1px solid #fecaca',borderRadius:10,padding:'16px 20px',color:'#dc2626',fontSize:13}}>
-          Could not load news. Check your API key and try refreshing.
-        </div>
-      )}
-
-      {loading&&(
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(300px,1fr))',gap:16}}>
-          {[...Array(6)].map((_,i)=>(
-            <div key={i} style={{background:'#fff',border:'1px solid #e2e8f0',borderRadius:10,padding:20,height:160}}>
-              {[60,90,80,70].map((w,j)=><div key={j} style={{height:10,background:'#f1f5f9',borderRadius:4,marginBottom:10,width:w+'%',animation:'pulse 1.5s ease-in-out infinite'}}/>)}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {!loading&&!error&&articles.length===0&&(
-        <div style={{textAlign:'center',padding:'60px 0'}}>
-          <div style={{fontSize:40,marginBottom:12}}>📰</div>
-          <div style={{fontSize:15,fontWeight:600,color:'#0f172a',marginBottom:8}}>No news loaded yet</div>
-          <div style={{fontSize:13,color:'#64748b',marginBottom:20}}>Click Refresh to fetch the latest Bay Area life science news.</div>
-        </div>
-      )}
-
-      {!loading&&!error&&articles.length>0&&displayed.length===0&&(
-        <div style={{textAlign:'center',padding:'60px 0',color:'#94a3b8',fontSize:14}}>No results in this category. Try another filter or click Refresh.</div>
-      )}
-
-      {!loading&&displayed.length>0&&(
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(300px,1fr))',gap:16}}>
-          {displayed.map((item,i)=>{
-            const cat=CAT_COLORS[item.category]||{bg:'#f1f5f9',color:'#475569',icon:'📰'};
-            const isExp=expandedId===i;
-            return(
-              <div key={i} onClick={()=>setExpandedId(isExp?null:i)}
-                style={{background:'#fff',border:'1px solid #e2e8f0',borderRadius:10,padding:20,cursor:'pointer',transition:'box-shadow .15s',boxShadow:isExp?'0 4px 20px rgba(0,0,0,.08)':'none'}}>
-                <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:8,marginBottom:10}}>
-                  <span style={{fontSize:11,fontWeight:600,padding:'3px 8px',borderRadius:4,background:cat.bg,color:cat.color,whiteSpace:'nowrap'}}>{cat.icon} {(item.category||'news').toUpperCase()}</span>
-                  <span style={{fontSize:11,color:'#94a3b8',whiteSpace:'nowrap',flexShrink:0}}>{item.date}</span>
-                </div>
-                <div style={{fontSize:14,fontWeight:600,color:'#0f172a',lineHeight:1.4,marginBottom:6}}>{item.title}</div>
-                {item.company&&item.company!=='Multiple'&&<div style={{fontSize:12,color:'#0369a1',fontWeight:500,marginBottom:6}}>🏢 {item.company}</div>}
-                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8,gap:8}}>
-                  {item.source&&<div style={{fontSize:11,color:'#94a3b8'}}>📰 {item.source}</div>}
-                  {item.url&&<a href={item.url} target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()}
-                    style={{fontSize:11,color:'#0369a1',fontWeight:600,textDecoration:'none',whiteSpace:'nowrap',padding:'2px 8px',background:'#e0f2fe',borderRadius:4}}>
-                    Read Article →
-                  </a>}
-                </div>
-                <div style={{fontSize:12,color:'#64748b',lineHeight:1.6}}>
-                  {isExp?item.summary:(item.summary||'').slice(0,100)+((item.summary||'').length>100?'…':'')}
-                </div>
-                {isExp&&item.relevance&&(
-                  <div style={{marginTop:12,padding:'10px 12px',background:'#f0f9ff',borderRadius:6,borderLeft:'3px solid #0369a1'}}>
-                    <div style={{fontSize:10,fontWeight:600,color:'#0369a1',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:4}}>Broker Relevance</div>
-                    <div style={{fontSize:12,color:'#0369a1',lineHeight:1.5}}>{item.relevance}</div>
-                  </div>
-                )}
-                <div style={{marginTop:8,fontSize:11,color:'#94a3b8',textAlign:'right'}}>{isExp?'▲ Less':'▼ More'}</div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
-
 function App(){
   const [listings,setListings]=useState([]);
   const [loaded,setLoaded]=useState(false);
@@ -989,8 +803,8 @@ function App(){
 
   function confirmDelete(){const updated=listings.filter(r=>r.id!==delId);setListings(updated);persist(updated);setDelId(null);if(view==='detail')setView('table');showToast('Listing deleted.');}
 
-  const CLIENT_COLS=['projectName','city','landlord','sqftDirect','sqftSublease','pricingGuidance','leaseType','deliveryTiming','comments'];
-  const CLIENT_LABELS={projectName:'Project Name',city:'City',landlord:'Landlord',sqftDirect:'Direct SF',sqftSublease:'Sublease SF',pricingGuidance:'Pricing ($/SF)',leaseType:'Lease Type',deliveryTiming:'Delivery',comments:'Comments'};
+  const CLIENT_COLS=['projectName','streetAddress','city','landlord','sqftDirect','sqftSublease','pricingGuidance','leaseType','deliveryTiming','comments'];
+  const CLIENT_LABELS={projectName:'Project Name',streetAddress:'Address',city:'City',landlord:'Landlord',sqftDirect:'Direct SF',sqftSublease:'Sublease SF',pricingGuidance:'Pricing ($/SF)',leaseType:'Lease Type',deliveryTiming:'Delivery',comments:'Comments'};
   const ALL_COLS=['dateEntered','revisionDate','avgTOM','availabilityStatus','currentTenant','landlord','projectName','streetAddress','suiteFloor','city','state','sqftDirect','sqftSublease','sqftShadow','sqftTIReady','sqftUnderConstruction','sqftPlanned','divisibility','pricingGuidance','leaseType','tia','opexDollars','opexType','facilityFeatures','deliveryTiming','subleaseTerm','forSale','listingFirm','listingContact','comments'];
   // Classic view: all spreadsheet columns in exact spreadsheet order
   const CLASSIC_COLS=['dateEntered','revisionDate','avgTOM','availabilityStatus','currentTenant','landlord','projectName','streetAddress','suiteFloor','city','state','sqftDirect','sqftSublease','sqftShadow','sqftTIReady','sqftUnderConstruction','sqftPlanned','divisibility','pricingGuidance','leaseType','tia','opexDollars','opexType','facilityFeatures','deliveryTiming','subleaseTerm','forSale','listingFirm','listingContact','comments'];
@@ -1018,7 +832,6 @@ function App(){
         *{box-sizing:border-box;margin:0;padding:0}
         ::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:#f1f5f9}::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
         @keyframes spin{to{transform:rotate(360deg)}}
-        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
         @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
         @keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
         .fade-up{animation:fadeUp .2s ease}
@@ -1052,7 +865,7 @@ function App(){
           </div>
         </div>
         <div style={{display:'flex',gap:2,flex:1}}>
-          {[['dashboard','Dashboard'],['table','Inventory'],['absorption','Absorption'],['news','News'],['query','AI Query']].map(([v,l])=>{
+          {[['dashboard','Dashboard'],['table','Inventory'],['absorption','Absorption'],['query','AI Query']].map(([v,l])=>{
             const active=view===v||(view==='detail'&&v==='table')||(view==='form'&&v==='table');
             return(<button key={v} onClick={()=>setView(v)} style={{padding:'6px 14px',fontSize:13,fontWeight:500,border:'none',cursor:'pointer',borderRadius:6,background:active?'#f0f9ff':'transparent',color:active?'#0369a1':'#64748b',transition:'all .15s'}}>{l}</button>);
           })}
@@ -1066,7 +879,7 @@ function App(){
               </div>
             ))}
           </div>
-          {view!=='query'&&view!=='news'&&view!=='absorption'&&<button className="btn btn-success" onClick={openAdd}>+ Add Listing</button>}
+          {view!=='query'&&view!=='absorption'&&<button className="btn btn-success" onClick={openAdd}>+ Add Listing</button>}
           {(view==='table'||view==='detail')&&<button className="btn btn-ghost" onClick={exportCSV}>↓ {selectedIds.size>0?`Export (${selectedIds.size} selected)`:'Export All'}</button>}
           {view==='table'&&(
             <div data-viewdrop style={{position:'relative'}}>
@@ -1195,7 +1008,7 @@ function App(){
                     />
                   </th>
                   {(clientView
-                    ? [['projectName','Project Name'],['city','City'],['landlord','Landlord'],['sqftDirect','Direct SF'],['sqftSublease','Sublease SF'],['pricingGuidance','Pricing'],['leaseType','Lease Type'],['deliveryTiming','Delivery']]
+                    ? [['projectName','Project Name'],['streetAddress','Address'],['city','City'],['landlord','Landlord'],['sqftDirect','Direct SF'],['sqftSublease','Sublease SF'],['pricingGuidance','Pricing'],['leaseType','Lease Type'],['deliveryTiming','Delivery']]
                     : classicView
                     ? CLASSIC_COLS.map(k=>[k,CLASSIC_LABELS[k]||k])
                     : [['dateEntered','Date Added'],['revisionDate','Revised'],['avgTOM','TOM (Mo)'],['currentTenant','Tenant'],['landlord','Landlord'],['streetAddress','Address'],['city','City'],['sqftDirect','Direct SF'],['sqftSublease','Sublease SF'],['sqftPlanned','Planned SF'],['pricingGuidance','Pricing'],['leaseType','Lease'],['deliveryTiming','Delivery'],['listingFirm','Firm']]
@@ -1215,6 +1028,7 @@ function App(){
                       </td>
                       {clientView ? (<>
                         <td className="td" style={{fontWeight:500,color:'#334155'}}>{r.projectName||r.streetAddress||'—'}</td>
+                        <td className="td" style={{color:'#475569'}}>{r.streetAddress||'—'}</td>
                         <td className="td"><span style={{fontWeight:600,color:'#0369a1'}}>{r.city||'—'}</span></td>
                         <td className="td" style={{color:'#475569',fontWeight:500}}>{r.landlord||'—'}</td>
                         <td className="td"><span style={{color:r.sqftDirect?'#0e7c4a':'#cbd5e1',fontWeight:r.sqftDirect?600:400}}>{r.sqftDirect?fmtNum(r.sqftDirect):'—'}</span></td>
@@ -1344,10 +1158,6 @@ function App(){
 
         {view==='absorption'&&(
           <AbsorptionTab/>
-        )}
-
-        {view==='news'&&(
-          <NewsTab/>
         )}
 
         {view==='query'&&(
