@@ -803,8 +803,8 @@ function App(){
 
   function confirmDelete(){const updated=listings.filter(r=>r.id!==delId);setListings(updated);persist(updated);setDelId(null);if(view==='detail')setView('table');showToast('Listing deleted.');}
 
-  const CLIENT_COLS=['projectName','streetAddress','city','landlord','sqftDirect','sqftSublease','pricingGuidance','leaseType','deliveryTiming','comments'];
-  const CLIENT_LABELS={projectName:'Project Name',streetAddress:'Address',city:'City',landlord:'Landlord',sqftDirect:'Direct SF',sqftSublease:'Sublease SF',pricingGuidance:'Pricing ($/SF)',leaseType:'Lease Type',deliveryTiming:'Delivery',comments:'Comments'};
+  const CLIENT_COLS=['projectName','streetAddress','city','currentTenant','landlord','sqftDirect','sqftSublease','pricingGuidance','leaseType','deliveryTiming','comments'];
+  const CLIENT_LABELS={projectName:'Project Name',streetAddress:'Address',city:'City',currentTenant:'Tenant',landlord:'Landlord',sqftDirect:'Direct SF',sqftSublease:'Sublease SF',pricingGuidance:'Pricing ($/SF)',leaseType:'Lease Type',deliveryTiming:'Delivery',comments:'Comments'};
   const ALL_COLS=['dateEntered','revisionDate','avgTOM','availabilityStatus','currentTenant','landlord','projectName','streetAddress','suiteFloor','city','state','sqftDirect','sqftSublease','sqftShadow','sqftTIReady','sqftUnderConstruction','sqftPlanned','divisibility','pricingGuidance','leaseType','tia','opexDollars','opexType','facilityFeatures','deliveryTiming','subleaseTerm','forSale','listingFirm','listingContact','comments'];
   // Classic view: all spreadsheet columns in exact spreadsheet order
   const CLASSIC_COLS=['dateEntered','revisionDate','avgTOM','availabilityStatus','currentTenant','landlord','projectName','streetAddress','suiteFloor','city','state','sqftDirect','sqftSublease','sqftShadow','sqftTIReady','sqftUnderConstruction','sqftPlanned','divisibility','pricingGuidance','leaseType','tia','opexDollars','opexType','facilityFeatures','deliveryTiming','subleaseTerm','forSale','listingFirm','listingContact','comments'];
@@ -1008,7 +1008,7 @@ function App(){
                     />
                   </th>
                   {(clientView
-                    ? [['projectName','Project Name'],['streetAddress','Address'],['city','City'],['landlord','Landlord'],['sqftDirect','Direct SF'],['sqftSublease','Sublease SF'],['pricingGuidance','Pricing'],['leaseType','Lease Type'],['deliveryTiming','Delivery']]
+                    ? [['projectName','Project Name'],['streetAddress','Address'],['city','City'],['currentTenant','Tenant'],['landlord','Landlord'],['sqftDirect','Direct SF'],['sqftSublease','Sublease SF'],['pricingGuidance','Pricing'],['leaseType','Lease Type'],['deliveryTiming','Delivery']]
                     : classicView
                     ? CLASSIC_COLS.map(k=>[k,CLASSIC_LABELS[k]||k])
                     : [['dateEntered','Date Added'],['revisionDate','Revised'],['avgTOM','TOM (Mo)'],['currentTenant','Tenant'],['landlord','Landlord'],['streetAddress','Address'],['city','City'],['sqftDirect','Direct SF'],['sqftSublease','Sublease SF'],['sqftPlanned','Planned SF'],['pricingGuidance','Pricing'],['leaseType','Lease'],['deliveryTiming','Delivery'],['listingFirm','Firm']]
@@ -1030,6 +1030,7 @@ function App(){
                         <td className="td" style={{fontWeight:500,color:'#334155'}}>{r.projectName||r.streetAddress||'—'}</td>
                         <td className="td" style={{color:'#475569'}}>{r.streetAddress||'—'}</td>
                         <td className="td"><span style={{fontWeight:600,color:'#0369a1'}}>{r.city||'—'}</span></td>
+                        <td className="td" style={{color:'#475569'}}>{r.currentTenant||'—'}</td>
                         <td className="td" style={{color:'#475569',fontWeight:500}}>{r.landlord||'—'}</td>
                         <td className="td"><span style={{color:r.sqftDirect?'#0e7c4a':'#cbd5e1',fontWeight:r.sqftDirect?600:400}}>{r.sqftDirect?fmtNum(r.sqftDirect):'—'}</span></td>
                         <td className="td"><span style={{color:r.sqftSublease?'#b45309':'#cbd5e1',fontWeight:r.sqftSublease?600:400}}>{r.sqftSublease?fmtNum(r.sqftSublease):'—'}</span></td>
